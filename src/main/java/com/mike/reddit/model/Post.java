@@ -63,7 +63,6 @@ public class Post {
     }
 
     public static class Builder {
-        private Long postId;
         private String postName;
 
         private String url;
@@ -72,11 +71,6 @@ public class Post {
         private Customer customer;
         private Instant createdDate;
         private Subreddit subReddit;
-
-        public Builder setPostId(Long postId) {
-            this.postId = postId;
-            return this;
-        }
 
         public Builder setPostName(String postName) {
             this.postName = postName;
@@ -127,7 +121,6 @@ public class Post {
     }
 
     private Post(Builder builder) {
-        this.postId = builder.postId;
         this.postName = builder.postName;
         this.url = builder.url;
         this.description = builder.description;
