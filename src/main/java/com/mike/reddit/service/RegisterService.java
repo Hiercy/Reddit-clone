@@ -1,6 +1,7 @@
 package com.mike.reddit.service;
 
 import com.mike.reddit.dto.RegisterRequest;
+import com.mike.reddit.exceptions.SpringRedditException;
 import com.mike.reddit.model.Customer;
 import com.mike.reddit.model.VerificationToken;
 import com.mike.reddit.repository.CustomerRepository;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -33,18 +35,35 @@ public class RegisterService implements Register {
     @Override
     @Transactional
     public void register(RegisterRequest registerRequest) {
-        Customer customer = new Customer.Builder()
-                .setUsername(registerRequest.getUsername())
-                .setPassword(passwordEncoder.encode(registerRequest.getPassword()))
-                .setEmail(registerRequest.getEmail())
-                .setCreatedDate(Instant.now())
-                .setEnabled(true)
-                .build();
+        Customer customer = new Customer();
+        customer.setUsername(registerRequest.getUsername());
+        customer.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        customer.setEmail(registerRequest.getEmail());
+        customer.setCreatedDate(Instant.now());
+        customer.setEnabled(false);
 
         customerRepository.save(customer);
 
         String token = generateToken(customer);
         sendVerificationMail(customer, token);
+    }
+
+    @Override
+    public void verify(String token) {
+        Optional<VerificationToken> verificationToken = verificationTokenRepository.findByToken(token);
+        verifyUser(verificationToken.orElseThrow(() -> new SpringRedditException("Invalid token")));
+    }
+
+    @Transactional
+    private void verifyUser(VerificationToken verificationToken) {
+        String username = verificationToken.getCustomer().getUsername();
+        Customer customer = customerRepository
+                .findByUsername(username)
+                .orElseThrow(() -> new SpringRedditException("User with username " + username + " not found"));
+
+        customer.setEnabled(true);
+
+        customerRepository.save(customer);
     }
 
     private String generateToken(Customer customer) {
@@ -62,7 +81,7 @@ public class RegisterService implements Register {
 
     private void sendVerificationMail(Customer customer, String token) {
         if (!StringUtils.isEmpty(customer.getEmail())) {
-            String message = String.format("Hello, %s! Welcome to Reddit-clone. Please visit next link: http://localhost:8080/activate/%s",
+            String message = String.format("Hello, %s! Welcome to Reddit-clone. Please visit next link: http://localhost:8080/auth/activate/%s",
                     customer.getUsername(),
                     token);
 
