@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -19,12 +20,14 @@ public class RegisterService implements Register {
     private final CustomerRepository customerRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MailSender mailSender;
 
     @Autowired
-    public RegisterService(CustomerRepository customerRepository, VerificationTokenRepository verificationTokenRepository, PasswordEncoder passwordEncoder) {
+    public RegisterService(CustomerRepository customerRepository, VerificationTokenRepository verificationTokenRepository, PasswordEncoder passwordEncoder, MailSender mailSender) {
         this.customerRepository = customerRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.passwordEncoder = passwordEncoder;
+        this.mailSender = mailSender;
     }
 
     @Override
@@ -40,10 +43,11 @@ public class RegisterService implements Register {
 
         customerRepository.save(customer);
 
-        generateToken(customer);
+        String token = generateToken(customer);
+        sendVerificationMail(customer, token);
     }
 
-    private void generateToken(Customer customer) {
+    private String generateToken(Customer customer) {
         String token = UUID.randomUUID().toString();
 
         VerificationToken verificationToken = new VerificationToken();
@@ -52,7 +56,17 @@ public class RegisterService implements Register {
         verificationToken.setCreatedDate(Instant.now());
 
         verificationTokenRepository.save(verificationToken);
-        System.out.println("Token was generated and inserted " + token);
-//        return token;
+
+        return token;
+    }
+
+    private void sendVerificationMail(Customer customer, String token) {
+        if (!StringUtils.isEmpty(customer.getEmail())) {
+            String message = String.format("Hello, %s! Welcome to Reddit-clone. Please visit next link: http://localhost:8080/activate/%s",
+                    customer.getUsername(),
+                    token);
+
+            mailSender.send(customer.getEmail(), "Activation code from Reddit-clone", message);
+        }
     }
 }
