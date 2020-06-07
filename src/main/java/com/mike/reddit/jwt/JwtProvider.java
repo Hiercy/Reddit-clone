@@ -28,8 +28,6 @@ public class JwtProvider {
     private Long jwtExpirationInMillis;
     @Value("${jwt.key.alias}")
     private String aliasKey;
-    @Value("${jwt.certification.alias}")
-    private String aliasCertification;
     @Value("${jwt.password}")
     private String password;
 
@@ -54,7 +52,7 @@ public class JwtProvider {
                 .compact();
     }
 
-    public String generateTokenWithUserName(String username) {
+    public String generateTokenWithUsername(String username) {
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(from(Instant.now()))
@@ -65,8 +63,7 @@ public class JwtProvider {
 
     private PrivateKey getPrivateKey() {
         try {
-            PrivateKey keystore = (PrivateKey) keyStore.getKey(aliasKey, password.toCharArray());
-            return keystore;
+            return (PrivateKey) keyStore.getKey(aliasKey, password.toCharArray());
         } catch (KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
             throw new SpringRedditException(e, "Exception occured while retrieving public key from keystore");
         }
@@ -79,7 +76,7 @@ public class JwtProvider {
 
     private PublicKey getPublicKey() {
         try {
-            return keyStore.getCertificate(aliasCertification).getPublicKey();
+            return keyStore.getCertificate(aliasKey).getPublicKey();
         } catch (KeyStoreException e) {
             throw new SpringRedditException(e, "Exception occured while " +
                     "retrieving public key from keystore");

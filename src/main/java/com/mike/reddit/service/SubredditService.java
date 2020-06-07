@@ -40,7 +40,7 @@ public class SubredditService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public SubredditDto getOne(Long id) {
         Subreddit subreddit = subredditRepository.findById(id)
                 .orElseThrow(() -> new SpringRedditException("Cannot find subreddit with this id"));
