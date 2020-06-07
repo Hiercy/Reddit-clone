@@ -26,13 +26,19 @@ public class JwtProvider {
     private KeyStore keyStore;
     @Value("${jwt.expiration.time}")
     private Long jwtExpirationInMillis;
+    @Value("${jwt.key.alias}")
+    private String aliasKey;
+    @Value("${jwt.certification.alias}")
+    private String aliasCertification;
+    @Value("${jwt.password}")
+    private String password;
 
     @PostConstruct
     public void init() {
         try {
             keyStore = KeyStore.getInstance("JKS");
-            InputStream resourceAsStream = new FileInputStream("<your_keystore>.jks");
-            keyStore.load(resourceAsStream, "<your_secret>".toCharArray());
+            InputStream resourceAsStream = new FileInputStream(System.getProperty("user.dir") + "\\src\\main\\resources\\reddit.jks");
+            keyStore.load(resourceAsStream, password.toCharArray());
         } catch (KeyStoreException | IOException | NoSuchAlgorithmException | CertificateException keyStoreException) {
             throw new SpringRedditException(keyStoreException, "Exception occurred while loading keystore");
         }
@@ -59,7 +65,7 @@ public class JwtProvider {
 
     private PrivateKey getPrivateKey() {
         try {
-            PrivateKey keystore = (PrivateKey) keyStore.getKey("<your_alias>", "<your_secret>".toCharArray());
+            PrivateKey keystore = (PrivateKey) keyStore.getKey(aliasKey, password.toCharArray());
             return keystore;
         } catch (KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
             throw new SpringRedditException(e, "Exception occured while retrieving public key from keystore");
@@ -73,7 +79,7 @@ public class JwtProvider {
 
     private PublicKey getPublicKey() {
         try {
-            return keyStore.getCertificate("<your_alias>").getPublicKey();
+            return keyStore.getCertificate(aliasCertification).getPublicKey();
         } catch (KeyStoreException e) {
             throw new SpringRedditException(e, "Exception occured while " +
                     "retrieving public key from keystore");
