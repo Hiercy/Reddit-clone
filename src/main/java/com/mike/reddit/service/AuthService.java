@@ -46,6 +46,13 @@ public class AuthService implements Register {
     @Override
     @Transactional
     public String register(RegisterRequest registerRequest) {
+        Optional<Customer> check = customerRepository.findByUsername(registerRequest.getUsername());
+        if (check.isPresent() && registerRequest.getUsername().equals(check.get().getUsername())) {
+            Customer customer = customerRepository.findByUsername(registerRequest.getUsername()).orElseThrow(() -> new SpringRedditException("User not exist"));
+            VerificationToken verificationToken = verificationTokenRepository.findByCustomerId(customer.getCustomerId());
+
+            return verificationToken.getToken();
+        }
         Customer customer = new Customer();
         customer.setUsername(registerRequest.getUsername());
         customer.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
