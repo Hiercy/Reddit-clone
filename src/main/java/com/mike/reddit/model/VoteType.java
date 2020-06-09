@@ -23,5 +23,4 @@ public enum VoteType {
     public Integer getVote() {
         return vote;
     }
-
 }
