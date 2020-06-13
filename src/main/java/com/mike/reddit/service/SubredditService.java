@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,12 +24,7 @@ public class SubredditService {
 
     @Transactional
     public SubredditDto create(SubredditDto subredditDto) {
-        Subreddit save = subredditRepository.save(new Subreddit.Builder()
-                .setName(subredditDto.getTitle())
-                .setDescription(subredditDto.getDescription())
-                .setSibredditId(subredditDto.getId())
-                .setCreatedDate()
-                .build());
+        Subreddit save = subredditRepository.save(dtoToSubreddit(subredditDto));
         subredditDto.setId(save.getSubredditId());
         return subredditDto;
     }
@@ -47,12 +43,21 @@ public class SubredditService {
         return entityToDto(subreddit);
     }
 
+    private Subreddit dtoToSubreddit(SubredditDto subredditDto) {
+        return new Subreddit().builder()
+                .name(subredditDto.getTitle())
+                .description(subredditDto.getDescription())
+                .subredditId(subredditDto.getId())
+                .createdDate(Instant.now())
+                .build();
+    }
+
     private SubredditDto entityToDto(Subreddit subreddit) {
-        return new SubredditDto.Builder()
-                .setId(subreddit.getSubredditId())
-                .setTitle(subreddit.getName())
-                .setDescription(subreddit.getDescription())
-                .setNumOfPosts(subreddit.getPosts().size())
+        return new SubredditDto().builder()
+                .id(subreddit.getSubredditId())
+                .title(subreddit.getName())
+                .description(subreddit.getDescription())
+                .numOfPosts(subreddit.getPosts().size())
                 .build();
     }
 }
