@@ -1,8 +1,8 @@
 package com.mike.reddit.service;
 
 import com.mike.reddit.dto.AuthenticationResponse;
-import com.mike.reddit.dto.LoginRequest;
-import com.mike.reddit.dto.RegisterRequest;
+import com.mike.reddit.dto.LoginDto;
+import com.mike.reddit.dto.RegisterDto;
 import com.mike.reddit.exceptions.SpringRedditException;
 import com.mike.reddit.jwt.JwtProvider;
 import com.mike.reddit.model.Customer;
@@ -14,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +25,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class AuthService implements Register {
+public class AuthService {
 
     private final CustomerRepository customerRepository;
     private final VerificationTokenRepository verificationTokenRepository;
@@ -43,21 +44,20 @@ public class AuthService implements Register {
         this.jwtProvider = jwtProvider;
     }
 
-    @Override
     @Transactional
-    public String register(RegisterRequest registerRequest) {
-        Optional<Customer> check = customerRepository.findByUsername(registerRequest.getUsername());
-        if (check.isPresent() && registerRequest.getUsername().equals(check.get().getUsername())) {
-            Customer customer = customerRepository.findByUsername(registerRequest.getUsername())
+    public String register(RegisterDto registerDto) {
+        Optional<Customer> check = customerRepository.findByUsername(registerDto.getUsername());
+        if (check.isPresent() && registerDto.getUsername().equals(check.get().getUsername())) {
+            Customer customer = customerRepository.findByUsername(registerDto.getUsername())
                     .orElseThrow(() -> new SpringRedditException("User not exist"));
             VerificationToken verificationToken = verificationTokenRepository.findByCustomerId(customer.getCustomerId());
 
             return verificationToken.getToken();
         }
         Customer customer = new Customer();
-        customer.setUsername(registerRequest.getUsername());
-        customer.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
-        customer.setEmail(registerRequest.getEmail());
+        customer.setUsername(registerDto.getUsername());
+        customer.setPassword(passwordEncoder.encode(registerDto.getPassword()));
+        customer.setEmail(registerDto.getEmail());
         customer.setCreatedDate(Instant.now());
         customer.setEnabled(false);
 
@@ -68,7 +68,6 @@ public class AuthService implements Register {
         return token;
     }
 
-    @Override
     public void verify(String token) {
         Optional<VerificationToken> verificationToken = verificationTokenRepository.findByToken(token);
         verifyUser(verificationToken.orElseThrow(() -> new SpringRedditException("Invalid token")));
@@ -109,14 +108,22 @@ public class AuthService implements Register {
         }
     }
 
-    public AuthenticationResponse login(LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
+    public AuthenticationResponse login(LoginDto loginDto) {
+        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String token = jwtProvider.generateToken(authentication);
 
-        return new AuthenticationResponse.Builder()
-                .setAuthenticationToken(token)
-                .setUsername(loginRequest.getUsername())
+        return new AuthenticationResponse().builder()
+                .authenticationToken(token)
+                .username(loginDto.getUsername())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public Customer getCustomer() {
+        org.springframework.security.core.userdetails.User principal = (org.springframework.security.core.userdetails.User) SecurityContextHolder.
+                getContext().getAuthentication().getPrincipal();
+        return customerRepository.findByUsername(principal.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User name not found - " + principal.getUsername()));
     }
 }
