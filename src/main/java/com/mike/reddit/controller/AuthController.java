@@ -1,8 +1,8 @@
 package com.mike.reddit.controller;
 
 import com.mike.reddit.dto.AuthenticationResponse;
-import com.mike.reddit.dto.LoginRequest;
-import com.mike.reddit.dto.RegisterRequest;
+import com.mike.reddit.dto.LoginDto;
+import com.mike.reddit.dto.RegisterDto;
 import com.mike.reddit.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,9 +21,9 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<String> register(@RequestBody RegisterDto registerDto) {
         // TODO: For debug. Correct it later!
-        String token = authService.register(registerRequest);
+        String token = authService.register(registerDto);
         return new ResponseEntity<>("http://localhost:8080/auth/activate/" + token, HttpStatus.OK);
     }
 
@@ -34,7 +34,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public AuthenticationResponse login(@RequestBody LoginRequest loginRequest) {
-        return authService.login(loginRequest);
+    public AuthenticationResponse login(@RequestBody LoginDto loginDto) {
+        return authService.login(loginDto);
     }
 }
