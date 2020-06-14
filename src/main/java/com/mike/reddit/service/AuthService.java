@@ -30,16 +30,16 @@ public class AuthService {
     private final CustomerRepository customerRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final PasswordEncoder passwordEncoder;
-    private final MailSender mailSender;
+    private final MailService mailService;
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
 
     @Autowired
-    public AuthService(CustomerRepository customerRepository, VerificationTokenRepository verificationTokenRepository, PasswordEncoder passwordEncoder, MailSender mailSender, AuthenticationManager authenticationManager, JwtProvider jwtProvider) {
+    public AuthService(CustomerRepository customerRepository, VerificationTokenRepository verificationTokenRepository, PasswordEncoder passwordEncoder, MailService mailService, AuthenticationManager authenticationManager, JwtProvider jwtProvider) {
         this.customerRepository = customerRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.passwordEncoder = passwordEncoder;
-        this.mailSender = mailSender;
+        this.mailService = mailService;
         this.authenticationManager = authenticationManager;
         this.jwtProvider = jwtProvider;
     }
@@ -104,7 +104,7 @@ public class AuthService {
                     customer.getUsername(),
                     token);
 
-            mailSender.send(customer.getEmail(), "Activation code from Reddit-clone", message);
+            mailService.send(customer.getEmail(), "Activation code from Reddit-clone", message);
         }
     }
 

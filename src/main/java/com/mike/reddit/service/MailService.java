@@ -8,14 +8,14 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
-public class MailSender {
+public class MailService {
 
     private final JavaMailSender mailSender;
     @Value("${spring.mail.username}")
     private String username;
 
     @Autowired
-    public MailSender(JavaMailSender mailSender) {
+    public MailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
 
