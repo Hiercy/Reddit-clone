@@ -1,15 +1,16 @@
 package com.mike.reddit.service;
 
+import com.github.marlonlom.utilities.timeago.TimeAgo;
 import com.mike.reddit.dto.PostRequestDto;
 import com.mike.reddit.dto.PostResponseDto;
 import com.mike.reddit.exceptions.SpringRedditException;
 import com.mike.reddit.model.Customer;
 import com.mike.reddit.model.Post;
 import com.mike.reddit.model.Subreddit;
+import com.mike.reddit.repository.CommentRepository;
 import com.mike.reddit.repository.CustomerRepository;
 import com.mike.reddit.repository.PostRepository;
 import com.mike.reddit.repository.SubredditRepository;
-import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,24 +19,31 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@AllArgsConstructor
 @Service
 public class PostService {
 
-    @Autowired
     private final PostRepository postRepository;
-    @Autowired
     private final SubredditRepository subredditRepository;
-    @Autowired
     private final CustomerRepository customerRepository;
-    @Autowired
     private final AuthService authService;
+    private final CommentRepository commentRepository;
 
-    public Post createPost(PostRequestDto postRequestDto) {
+    @Autowired
+    public PostService(PostRepository postRepository, SubredditRepository subredditRepository, CustomerRepository customerRepository, AuthService authService, CommentRepository commentRepository) {
+        this.postRepository = postRepository;
+        this.subredditRepository = subredditRepository;
+        this.customerRepository = customerRepository;
+        this.authService = authService;
+
+        this.commentRepository = commentRepository;
+    }
+
+    @Transactional
+    public void createPost(PostRequestDto postRequestDto) {
         Subreddit subreddit = subredditRepository.findByName(postRequestDto.getSubredditName())
                 .orElseThrow(() -> new SpringRedditException("Cannot find subreddit with name " + postRequestDto.getSubredditName() + "!"));
 
-        return postRepository.save(dtoToPost(postRequestDto, subreddit, authService.getCustomer()));
+        postRepository.save(dtoToPost(postRequestDto, subreddit, authService.getCustomer()));
     }
 
     @Transactional(readOnly = true)
@@ -99,7 +107,18 @@ public class PostService {
                 .postName(post.getPostName())
                 .url(post.getUrl())
                 .description(post.getDescription())
+                .voteCount(post.getVoteCount())
+                .duration(getDuration(post))
+                .commentCount(commentCount(post))
                 .build();
+    }
+
+    private String getDuration(Post post) {
+        return TimeAgo.using(post.getCreatedDate().toEpochMilli());
+    }
+
+    private Integer commentCount(Post post) {
+        return commentRepository.findByPost(post).size();
     }
 
     private String getSubredditNameByPost(Post post) {
