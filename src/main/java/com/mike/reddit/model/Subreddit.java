@@ -24,7 +24,7 @@ public class Subreddit {
     private String name;
     @NotBlank(message = "Community description cannot be empty")
     private String description;
-    @OneToMany(fetch = FetchType.LAZY)
+    @OneToMany(targetEntity = Post.class, mappedBy = "subReddit", fetch = FetchType.LAZY)
     private List<Post> posts;
     private Instant createdDate;
     @ManyToOne(fetch = FetchType.LAZY)
