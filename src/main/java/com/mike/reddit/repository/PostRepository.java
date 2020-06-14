@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
-    List<Post> findByCustomer(Customer customer);
+    List<Post> findAllByCustomer(Customer customer);
 
-    List<Post> findBySubReddit(Subreddit subreddit);
+    List<Post> findAllBySubReddit(Subreddit subreddit);
 }

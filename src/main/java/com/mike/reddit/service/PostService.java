@@ -12,6 +12,7 @@ import com.mike.reddit.repository.SubredditRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -37,6 +38,7 @@ public class PostService {
         return postRepository.save(dtoToPost(postRequestDto, subreddit, authService.getCustomer()));
     }
 
+    @Transactional(readOnly = true)
     public PostResponseDto getPostById(Long id) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new SpringRedditException("Cannot find post with id " + id + "!"));
@@ -44,6 +46,7 @@ public class PostService {
         return postToDto(post);
     }
 
+    @Transactional(readOnly = true)
     public List<PostResponseDto> getAllPosts() {
         return postRepository
                 .findAll()
@@ -52,23 +55,24 @@ public class PostService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<PostResponseDto> getPostsByUsername(String username) {
         Customer customer = customerRepository.findByUsername(username)
                 .orElseThrow(() -> new SpringRedditException("Cannot find user with username = " + username + "!"));
 
-        return postRepository
-                .findByCustomer(customer)
+        return postRepository.findAllByCustomer(customer)
                 .stream()
                 .map(this::postToDto)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<PostResponseDto> getPostsBySubreddit(Long id) {
         Subreddit subreddit = subredditRepository.findById(id)
                 .orElseThrow(() -> new SpringRedditException("Cannot find subreddit by this id " + id + "!"));
 
         return postRepository
-                .findBySubReddit(subreddit)
+                .findAllBySubReddit(subreddit)
                 .stream()
                 .map(this::postToDto)
                 .collect(Collectors.toList());
