@@ -20,6 +20,7 @@ public class Subreddit {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long subredditId;
     @NotBlank(message = "Community title cannot be empty")
+    @Column(unique = true)
     private String name;
     @NotBlank(message = "Community description cannot be empty")
     private String description;
