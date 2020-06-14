@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,7 +31,7 @@ public class SubredditService {
     @Transactional(readOnly = true)
     public List<SubredditDto> getAll() {
         return subredditRepository.findAll().stream()
-                .map(this::entityToDto)
+                .map(this::subredditToDto)
                 .collect(Collectors.toList());
     }
 
@@ -40,7 +39,7 @@ public class SubredditService {
     public SubredditDto getOne(Long id) {
         Subreddit subreddit = subredditRepository.findById(id)
                 .orElseThrow(() -> new SpringRedditException("Cannot find subreddit with this id"));
-        return entityToDto(subreddit);
+        return subredditToDto(subreddit);
     }
 
     private Subreddit dtoToSubreddit(SubredditDto subredditDto) {
@@ -48,11 +47,10 @@ public class SubredditService {
                 .name(subredditDto.getTitle())
                 .description(subredditDto.getDescription())
                 .subredditId(subredditDto.getId())
-                .createdDate(Instant.now())
                 .build();
     }
 
-    private SubredditDto entityToDto(Subreddit subreddit) {
+    private SubredditDto subredditToDto(Subreddit subreddit) {
         return new SubredditDto().builder()
                 .id(subreddit.getSubredditId())
                 .title(subreddit.getName())
