@@ -1,7 +1,8 @@
 package com.mike.reddit.service;
 
-import com.mike.reddit.dto.AuthenticationResponse;
+import com.mike.reddit.dto.AuthenticationResponseDto;
 import com.mike.reddit.dto.LoginDto;
+import com.mike.reddit.dto.RefreshTokenDto;
 import com.mike.reddit.dto.RegisterDto;
 import com.mike.reddit.exceptions.SpringRedditException;
 import com.mike.reddit.jwt.JwtProvider;
@@ -33,15 +34,17 @@ public class AuthService {
     private final MailService mailService;
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
+    private final RefreshTokenService refreshTokenService;
 
     @Autowired
-    public AuthService(CustomerRepository customerRepository, VerificationTokenRepository verificationTokenRepository, PasswordEncoder passwordEncoder, MailService mailService, AuthenticationManager authenticationManager, JwtProvider jwtProvider) {
+    public AuthService(CustomerRepository customerRepository, VerificationTokenRepository verificationTokenRepository, PasswordEncoder passwordEncoder, MailService mailService, AuthenticationManager authenticationManager, JwtProvider jwtProvider, RefreshTokenService refreshTokenService) {
         this.customerRepository = customerRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailService = mailService;
         this.authenticationManager = authenticationManager;
         this.jwtProvider = jwtProvider;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Transactional
@@ -108,13 +111,15 @@ public class AuthService {
         }
     }
 
-    public AuthenticationResponse login(LoginDto loginDto) {
+    public AuthenticationResponseDto login(LoginDto loginDto) {
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDto.getUsername(), loginDto.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String token = jwtProvider.generateToken(authentication);
 
-        return new AuthenticationResponse().builder()
+        return new AuthenticationResponseDto().builder()
                 .authenticationToken(token)
+                .refreshToken(refreshTokenService.generateRefreshToken().getToken())
+                .expiresAt(Instant.now().plusMillis(jwtProvider.getJwtExpirationInMillis()))
                 .username(loginDto.getUsername())
                 .build();
     }
@@ -125,5 +130,17 @@ public class AuthService {
                 getContext().getAuthentication().getPrincipal();
         return customerRepository.findByUsername(principal.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("User name not found - " + principal.getUsername()));
+    }
+
+    public AuthenticationResponseDto refreshToken(RefreshTokenDto refreshTokenDto) {
+        refreshTokenService.validateRefreshToken(refreshTokenDto.getRefreshToken());
+        String token = jwtProvider.generateTokenWithUsername(refreshTokenDto.getUsername());
+
+        return AuthenticationResponseDto.builder()
+                .authenticationToken(token)
+                .refreshToken(refreshTokenDto.getRefreshToken())
+                .expiresAt(Instant.now().plusMillis(jwtProvider.getJwtExpirationInMillis()))
+                .username(refreshTokenDto.getUsername())
+                .build();
     }
 }
