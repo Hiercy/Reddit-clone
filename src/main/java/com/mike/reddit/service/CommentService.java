@@ -59,7 +59,7 @@ public class CommentService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new SpringRedditException("Cannot find post with id = " + postId + "!"));
         return commentRepository
-                .findAllByPost(post)
+                .findByPost(post)
                 .stream()
                 .map(this::commentToDto)
                 .collect(Collectors.toList());
